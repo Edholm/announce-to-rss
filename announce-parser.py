@@ -25,7 +25,7 @@ def_settings = {
     'scc_log_path': '/tmp/tl-announce.log',  # Where to store the log file of SCC announces
     'cat_filter': '',                        # comma sep list of cats to filter.
     'channel_filter': '',                    # comma sep list of channels to watch
-    }
+    } # FIXME: user-filter and parser who the uploader were...
 
 
 def is_accepted_buffer(buffer):
