@@ -2,6 +2,7 @@
 # Takes an announce log and outputs an RSS feed/file
 
 import argparse as ap
+import ast
 
 rss_template = """<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
 <channel>
@@ -10,15 +11,35 @@ rss_template = """<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <description>{desc}</description>
 {items}
 </channel>
+</rss>
+"""
+
+item_template = """<item>
+    <title>{title}</title>
+    <link>{link}</link>
+    <description>{desc}</description>
+</item>
 """
 
 
 def read_items(args):
-    pass
+    logfiles = args.logfiles
+    items = []
+
+    # FIXME: only read the last 100 lines or so
+    # FIXME: reverse order
+    for log in logfiles:
+        with open(log, 'r') as f:
+            tmp = f.readlines()
+            items = items + [ast.literal_eval(x) for x in tmp]
+    return items
 
 
-def items_to_xml(items):
-    pass
+def items_to_xml(dict_items):
+    items = [item_template.format(title=x['title'],
+                                  link=x['url'],
+                                  desc=x['datetime']) for x in dict_items]
+    return "".join(items)
 
 
 def write_rss(items, args):
