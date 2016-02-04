@@ -11,6 +11,7 @@ author = "Emil Edholm"
 version = "1.0"
 license = "GPL3"
 desc = "Log PRIVMSG from announcers to file in a JSON-like format"
+debug = False
 
 tl_regex = re.compile(".+<(.+)>  Name:'(.+)' uploaded by .+ -  https?://.+/torrent/(.+)")
 scc_regex = re.compile('.* (.+?): -> (.+?) \(.+?\).*\?id=(.+)\)')
@@ -18,12 +19,14 @@ tl_url_template = 'http://www.torrentleech.org/rss/download/{id}/{access}/{name}
 scc_url_template = 'https://sceneaccess.eu/download/{id}/{access}/{name}.torrent'
 
 def_settings = {
-    'tl_access_key': 'key-goes-here',  # RSS access key
-    'scc_access_key': 'key-goes-here', #
-    'tl_log_path': '/tmp/scc-announce.log',    # Where to store the log file of TL announces
-    'scc_log_path': '/tmp/tl-announce.log',   # Where to store the log file of SCC announces
-    'cat_filter': '',     # Comma separated list of categories to filter.
+    'tl_access_key': 'key-goes-here',        # RSS access key
+    'scc_access_key': 'key-goes-here',       #
+    'tl_log_path': '/tmp/scc-announce.log',  # Where to store the log file of TL announces
+    'scc_log_path': '/tmp/tl-announce.log',  # Where to store the log file of SCC announces
+    'cat_filter': '',                        # Comma separated list of categories to filter.
+                                             # Only these will be logged
     }
+
 
 def read_privmsg(data, buffer, date, tags, displayed, highlight, sender, message):
     tl_msg = match_msg(sender, message, tl_regex)
@@ -41,6 +44,7 @@ def read_privmsg(data, buffer, date, tags, displayed, highlight, sender, message
         log(scc_msg, path)
 
     return w.WEECHAT_RC_OK
+
 
 def match_msg(sender, message, regx):
     match = regx.match(message)
@@ -65,20 +69,25 @@ def log(msg, path):
     filters = w.config_get_plugin('cat_filter')
     if len(filters) > 0:
         if msg['category'] not in filters.split(','):
-            #w.prnt('', 'Ignoring category "' + msg['category'] + '"')
+            debug_prnt('Ignoring category "' + msg['category'] + '"')
             return
 
-    #w.prnt("", 'Logging new msg: ' + str(msg))
+    debug_prnt('Logging new msg: ' + str(msg))
     with open(path, 'a') as log:
         log.write(str(msg) + '\n')
 
+
+def debug_prnt(msg):
+    if debug:
+        w.prnt("", msg)
+
+
 if __name__ == '__main__':
     if w.register(name, author, version, license, desc, '', ''):
-        #w.hook_config("plugins.var.python." + name + ".*", "config_cb", "")
+        # w.hook_config("plugins.var.python." + name + ".*", "config_cb", "")
         w.hook_print("", "irc_privmsg", "", True, "read_privmsg", "")
 
         # Set the default settings
         for k, v in def_settings.items():
             if not w.config_is_set_plugin(k):
                 w.config_set_plugin(k, v)
-
