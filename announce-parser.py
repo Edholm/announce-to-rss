@@ -8,7 +8,7 @@ from datetime import datetime
 
 name = "log-announcers"
 author = "Emil Edholm"
-version = "1.0"
+version = "1.1"
 license = "GPL3"
 desc = "Log PRIVMSG from announcers to file in a JSON-like format"
 debug = False
@@ -23,12 +23,27 @@ def_settings = {
     'scc_access_key': 'key-goes-here',       #
     'tl_log_path': '/tmp/scc-announce.log',  # Where to store the log file of TL announces
     'scc_log_path': '/tmp/tl-announce.log',  # Where to store the log file of SCC announces
-    'cat_filter': '',                        # Comma separated list of categories to filter.
-                                             # Only these will be logged
+    'cat_filter': '',                        # comma sep list of cats to filter.
+    'channel_filter': '',                    # comma sep list of channels to watch
     }
 
 
+def is_accepted_buffer(buffer):
+    chan_filter = w.config_get_plugin('channel_filter')
+    chans = list(filter(None, chan_filter.split(',')))
+    if len(chans) == 0:
+        # If user hasn't specified any filters, allow everything
+        return True
+
+    buff_name = w.buffer_get_string(buffer, "short_name")
+    return buff_name in chans
+
+
 def read_privmsg(data, buffer, date, tags, displayed, highlight, sender, message):
+    if not is_accepted_buffer(buffer):
+        debug_prnt('Ignoring filtered channel/buffer')
+        return w.WEECHAT_RC_ERROR
+    debug_prnt('Trying to match...')
     tl_msg = match_msg(sender, message, tl_regex)
     scc_msg = match_msg(sender, message, scc_regex)
 
