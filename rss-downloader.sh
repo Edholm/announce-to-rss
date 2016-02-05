@@ -1,11 +1,11 @@
 #!/usr/bin/bash
 
 url="$1"
-dest="$2"
-interval=1800  # 30*60 seconds
+interval="$2"
+dest="$3"
 
-if [ -z "$url" ] || [ -z "$dest" ]; then
-    echo RSS feed URL and output destination need to be supplied.
+if [ -z "$url" ] || [ -z "$dest" ] || [ -z "$interval" ]; then
+    echo RSS feed URL, interval, and output destination need to be supplied
     exit 1
 fi
 
