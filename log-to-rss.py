@@ -4,6 +4,7 @@
 import argparse as ap
 import ast
 import pyinotify as pyi
+import subprocess
 
 rss_template = """<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
 <channel>
@@ -74,6 +75,9 @@ def process_update(args):
         items.extend(process_file(log, args.num))
     write_rss(dicts_to_xml(items), args)
 
+    if args.cmd:
+        subprocess.call(args.cmd, shell=True)
+
 
 class EventHandler(pyi.ProcessEvent):
     def __init__(self, args):
@@ -99,6 +103,8 @@ if __name__ == '__main__':
                         help='Number of items to fetch')
     parser.add_argument('-w', '--watch', dest='watch', action='store_true',
                         default=False, help='Watch the input files for changes using inotify')
+    parser.add_argument('-c', '--cmd', dest='cmd',
+                        help='Command to execute after successful RSS write')
 
     args = parser.parse_args()
     process_update(args)
