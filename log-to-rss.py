@@ -5,6 +5,7 @@ import argparse as ap
 import ast
 import pyinotify as pyi
 import subprocess
+from datetime import datetime
 
 rss_template = """<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
 <channel>
@@ -59,6 +60,7 @@ def dicts_to_xml(dict_items):
 
 
 def write_rss(items, args):
+    vprint('Writing to ' + args.output, args)
     with open(args.output, 'w') as f:
         f.write(rss_template.format(title=args.title, link=args.link,
                                     desc=args.description, items=items))
@@ -70,13 +72,20 @@ def process_file(log, lines_wanted):
 
 
 def process_update(args):
+    vprint('Processing file update', args)
     items = []
     for log in args.logfiles:
         items.extend(process_file(log, args.num))
     write_rss(dicts_to_xml(items), args)
 
     if args.cmd:
+        vprint('Executing post-command', args)
         subprocess.call(args.cmd, shell=True)
+
+
+def vprint(msg, args):
+    if args.verbose:
+        print("{} - {}".format(datetime.now(), msg))
 
 
 class EventHandler(pyi.ProcessEvent):
@@ -84,6 +93,7 @@ class EventHandler(pyi.ProcessEvent):
         self.args = args
 
     def process_IN_CLOSE_WRITE(self, event):
+        vprint(event.path + ' has been updated...', self.args)
         process_update(self.args)
 
 
@@ -105,6 +115,8 @@ if __name__ == '__main__':
                         default=False, help='Watch the input files for changes using inotify')
     parser.add_argument('-c', '--cmd', dest='cmd',
                         help='Command to execute after successful RSS write')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Verbose output')
 
     args = parser.parse_args()
     process_update(args)
@@ -115,5 +127,6 @@ if __name__ == '__main__':
 
         notifier = pyi.Notifier(wm, handler)
         for log in args.logfiles:
+            vprint('Starting watch on ' + log, args)
             wm.add_watch(log, pyi.IN_CLOSE_WRITE)
         notifier.loop()
