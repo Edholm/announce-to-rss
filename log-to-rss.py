@@ -3,6 +3,7 @@
 
 import argparse as ap
 import ast
+import pyinotify as pyi
 
 rss_template = """<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
 <channel>
@@ -48,6 +49,8 @@ def lines_to_dicts(lines):
 
 
 def dicts_to_xml(dict_items):
+    # Sort by datetime first
+    items_sorted = sorted(dict_items, reverse=True, key=lambda x: x['datetime'])
     items = [item_template.format(title=x['title'],
                                   link=x['url'],
                                   desc=x['datetime']) for x in items_sorted]
@@ -63,6 +66,22 @@ def write_rss(items, args):
 def process_file(log, lines_wanted):
     lines = tail(log, lines_wanted)
     return lines_to_dicts(lines)
+
+
+def process_update(args):
+    items = []
+    for log in args.logfiles:
+        items.extend(process_file(log, args.num))
+    write_rss(dicts_to_xml(items), args)
+
+
+class EventHandler(pyi.ProcessEvent):
+    def __init__(self, args):
+        self.args = args
+
+    def process_IN_CLOSE_WRITE(self, event):
+        process_update(self.args)
+
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser(description='Parse announce logs and output RSS file.')
@@ -82,10 +101,13 @@ if __name__ == '__main__':
                         default=False, help='Watch the input files for changes using inotify')
 
     args = parser.parse_args()
-    items = []
-    for log in args.logfiles:
-        items.extend(process_file(log, args.num))
+    process_update(args)
 
-    # Sort by datetime first
-    items_sorted = sorted(items, reverse=True, key=lambda x: x['datetime'])
-    write_rss(dicts_to_xml(items_sorted), args)
+    if args.watch:
+        wm = pyi.WatchManager()
+        handler = EventHandler(args)
+
+        notifier = pyi.Notifier(wm, handler)
+        for log in args.logfiles:
+            wm.add_watch(log, pyi.IN_CLOSE_WRITE)
+        notifier.loop()
