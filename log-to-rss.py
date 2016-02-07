@@ -22,40 +22,32 @@ item_template = """<item>
 """
 
 
-def tail(args):
-    logfiles = args.logfiles
-    lines = []
-
-    for log in logfiles:
-        lines_wanted = abs(args.num)
-        buffer = 400  # Probable size of each line
-        i = -1 * lines_wanted
-        tmp = []
-        with open(log, 'rb') as f:
-            filesize = f.seek(0, 2)
-            while len(tmp)+1 <= lines_wanted:
-                offset = buffer*i
-                if abs(offset) > filesize:
-                    f.seek(0, 0)  # Beginning of file
-                    tmp = f.readlines()
-                    break
-                else:
-                    f.seek(offset, 2)
-                    # The first line is probably "incomplete"
-                    tmp = f.readlines()[1:]
-                i -= 1
-
-            lines.extend([x.decode('utf-8') for x in tmp[len(tmp)-lines_wanted:]])
-    return lines
+def tail(log, lines_wanted):
+    lines_wanted = abs(lines_wanted)
+    buffer = 400  # Probable size of each line
+    i = -1 * lines_wanted
+    tmp = []
+    with open(log, 'rb') as f:
+        filesize = f.seek(0, 2)
+        while len(tmp)+1 <= lines_wanted:
+            offset = buffer*i
+            if abs(offset) > filesize:
+                f.seek(0, 0)  # Beginning of file
+                tmp = f.readlines()
+                break
+            else:
+                f.seek(offset, 2)
+                # The first line is probably "incomplete"
+                tmp = f.readlines()[1:]
+            i -= 1
+    return [x.decode('utf-8') for x in tmp[len(tmp)-lines_wanted:]]
 
 
-def lines_to_dict(lines):
+def lines_to_dicts(lines):
     return [ast.literal_eval(x) for x in lines]
 
 
 def dicts_to_xml(dict_items):
-    # Sort by datetime first
-    items_sorted = sorted(dict_items, reverse=False, key=lambda x: x['datetime'])
     items = [item_template.format(title=x['title'],
                                   link=x['url'],
                                   desc=x['datetime']) for x in items_sorted]
@@ -67,6 +59,10 @@ def write_rss(items, args):
         f.write(rss_template.format(title=args.title, link=args.link,
                                     desc=args.description, items=items))
 
+
+def process_file(log, lines_wanted):
+    lines = tail(log, lines_wanted)
+    return lines_to_dicts(lines)
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser(description='Parse announce logs and output RSS file.')
@@ -82,9 +78,14 @@ if __name__ == '__main__':
                         help='Description attribute')
     parser.add_argument('-n', '--num', dest='num', metavar='INT', type=int, default='50',
                         help='Number of items to fetch')
+    parser.add_argument('-w', '--watch', dest='watch', action='store_true',
+                        default=False, help='Watch the input files for changes using inotify')
 
     args = parser.parse_args()
-    lines = tail(args)
-    dicts = lines_to_dict(lines)
-    items = dicts_to_xml(dicts)
-    write_rss(items, args)
+    items = []
+    for log in args.logfiles:
+        items.extend(process_file(log, args.num))
+
+    # Sort by datetime first
+    items_sorted = sorted(items, reverse=True, key=lambda x: x['datetime'])
+    write_rss(dicts_to_xml(items_sorted), args)
