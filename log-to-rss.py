@@ -45,7 +45,7 @@ def tail(args):
                     tmp = f.readlines()[1:]
                 i -= 1
 
-            lines.extend([x.decode('utf-8') for x in tmp])
+            lines.extend([x.decode('utf-8') for x in tmp[len(tmp)-lines_wanted:]])
     return lines
 
 
@@ -53,7 +53,7 @@ def lines_to_dict(lines):
     return [ast.literal_eval(x) for x in lines]
 
 
-def items_to_xml(dict_items):
+def dicts_to_xml(dict_items):
     # Sort by datetime first
     items_sorted = sorted(dict_items, reverse=False, key=lambda x: x['datetime'])
     items = [item_template.format(title=x['title'],
@@ -86,5 +86,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     lines = tail(args)
     dicts = lines_to_dict(lines)
-    items = items_to_xml(dicts)
+    items = dicts_to_xml(dicts)
     write_rss(items, args)
