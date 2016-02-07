@@ -22,23 +22,43 @@ item_template = """<item>
 """
 
 
-def read_items(args):
+def tail(args):
     logfiles = args.logfiles
-    items = []
+    lines = []
 
-    # FIXME: only read the last 100 lines or so
-    # FIXME: reverse order
     for log in logfiles:
-        with open(log, 'r') as f:
-            tmp = f.readlines()
-            items = items + [ast.literal_eval(x) for x in tmp]
-    return items
+        lines_wanted = abs(args.num)
+        buffer = 400  # Probable size of each line
+        i = -1 * lines_wanted
+        tmp = []
+        with open(log, 'rb') as f:
+            filesize = f.seek(0, 2)
+            while len(tmp)+1 <= lines_wanted:
+                offset = buffer*i
+                if abs(offset) > filesize:
+                    f.seek(0, 0)  # Beginning of file
+                    tmp = f.readlines()
+                    break
+                else:
+                    f.seek(offset, 2)
+                    # The first line is probably "incomplete"
+                    tmp = f.readlines()[1:]
+                i -= 1
+
+            lines.extend([x.decode('utf-8') for x in tmp])
+    return lines
+
+
+def lines_to_dict(lines):
+    return [ast.literal_eval(x) for x in lines]
 
 
 def items_to_xml(dict_items):
+    # Sort by datetime first
+    items_sorted = sorted(dict_items, reverse=False, key=lambda x: x['datetime'])
     items = [item_template.format(title=x['title'],
                                   link=x['url'],
-                                  desc=x['datetime']) for x in dict_items]
+                                  desc=x['datetime']) for x in items_sorted]
     return "".join(items)
 
 
@@ -60,7 +80,11 @@ if __name__ == '__main__':
                         help='Specify the RSS link attribute')
     parser.add_argument('-d', '--desc', dest='description', metavar='STR', default='RSS Feed',
                         help='Description attribute')
+    parser.add_argument('-n', '--num', dest='num', metavar='INT', type=int, default='50',
+                        help='Number of items to fetch')
 
     args = parser.parse_args()
-    items = items_to_xml(read_items(args))
+    lines = tail(args)
+    dicts = lines_to_dict(lines)
+    items = items_to_xml(dicts)
     write_rss(items, args)

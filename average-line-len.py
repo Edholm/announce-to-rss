@@ -7,4 +7,6 @@ with open(argv[1], 'r') as f:
 
 lens = [len(x) for x in lines]
 
-print(sum(lens) / len(lines))
+
+print('Avg: ' + str(sum(lens) / len(lines)))
+print('Max: ' + str(max(lens)))
