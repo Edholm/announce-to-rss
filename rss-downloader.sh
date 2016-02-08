@@ -60,7 +60,8 @@ while true; do
 
     mv "${tmpfile}" "${DEST}"
     touch "${DEST}"
-    if [ "$different" = true ]; then
+    chmod 644 "${DEST}"
+    if [ "$different" = true ] && [ -n "${CMD}" ]; then
       info "New file is different, executing command"
       eval ${CMD}
     fi
