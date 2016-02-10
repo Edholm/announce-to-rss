@@ -1,0 +1,32 @@
+commit a3d05f02ab0367fc5e2a08e7b9eb7cca4acf185e
+Author: Emil Edholm <emil@edholm.it>
+Date:   Sun Feb 7 21:30:46 2016 +0100
+
+    Lower min search req
+
+diff --git a/gui/slick/views/config_search.mako b/gui/slick/views/config_search.mako
+index 729a80a..2f42109 100644
+--- a/gui/slick/views/config_search.mako
++++ b/gui/slick/views/config_search.mako
+@@ -85,7 +85,7 @@
+                             <label>
+                                 <span class="component-title">Daily search frequency</span>
+                                 <span class="component-desc">
+-                                    <input type="number" min="10" step="1" name="dailysearch_frequency" value="${sickbeard.DAILYSEARCH_FREQUENCY}" class="form-control input-sm input75" autocapitalize="off" />
++                                    <input type="number" min="1" step="1" name="dailysearch_frequency" value="${sickbeard.DAILYSEARCH_FREQUENCY}" class="form-control input-sm input75" autocapitalize="off" />
+                                     <p>time in minutes between searches (min. ${sickbeard.MIN_DAILYSEARCH_FREQUENCY})</p>
+                                     </span>
+                             </label>
+diff --git a/sickbeard/__init__.py b/sickbeard/__init__.py
+index 1463bb2..76f81c2 100644
+--- a/sickbeard/__init__.py
++++ b/sickbeard/__init__.py
+@@ -261,7 +261,7 @@ DEFAULT_UPDATE_FREQUENCY = 1
+ DEFAULT_SHOWUPDATE_HOUR = random.randint(2, 4)
+ 
+ MIN_AUTOPOSTPROCESSER_FREQUENCY = 1
+-MIN_DAILYSEARCH_FREQUENCY = 10
++MIN_DAILYSEARCH_FREQUENCY = 1
+ MIN_BACKLOG_FREQUENCY = 10
+ MIN_UPDATE_FREQUENCY = 1
+ 

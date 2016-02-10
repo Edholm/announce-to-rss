@@ -1,0 +1,77 @@
+# Maintainer: willemw <willemw12@gmail.com>
+# Contributor: Edholm <bobby@verypublic.org>
+
+
+# In case of upgrade errors:
+#     error: failed to commit transaction (conflicting files)
+#     sickrage-git: /opt/sickrage/... exists in filesystem
+# Remove the conflicting files manually. The following will remove all or most of the conflicting files:
+#     # rm -rf /opt/sickrage/{contrib/,contributing.md,COPYING.txt,gui/,lib/,runscripts/,sickbeard/,SickBeard.py,sickrage/,tests/}
+# Use at your own risk!
+
+
+_pkgname=sickrage2
+pkgname=$_pkgname-git
+pkgver=2016.02.09.2.r0.g7a94dd0
+pkgrel=1
+pkgdesc="Automatic torrent/nzb video library manager for TV shows, with cache patch"
+arch=('any')
+url="https://github.com/SickRage/SickRage"
+license=('GPL3')
+#unrar
+makedepends=('git')
+depends=('python2-mako' 'python2-cheetah')
+#            'deluge: supported torrent client'
+#            'qbittorrent: supported torrent client'
+#            'rtorrent: supported torrent client'
+#            'sabnzbd: supported NZB downloader'
+#            'transmission-cli: supported torrent client'
+optdepends=('python2-notify: desktop notifications'
+            'python2-pyopenssl: enable SSL'
+            'unrar: RAR archives')
+provides=($_pkgname 'sickrage')
+conflicts=($_pkgname 'sickrage')
+options=('!strip')
+install=$pkgname.install
+source=("$pkgname::git://github.com/SickRage/SickRage.git"
+        'sickrage.service'
+        'sickrage.tmpfile'
+        'sickrage.lowered-minfreq.diff'
+        'sickrage.no_min_cache_time.diff')
+md5sums=('SKIP'
+         '6b19af092794f3d65a4651ef1a9c7e2e'
+         'f7a12df978d649da4e77d88e03f50252'
+         'a1256d9899b7581a5b6c3e6698998053'
+         'a53e6e4d84c34e40b5cb0baea0d234e7')
+patches=(sickrage.lowered-minfreq.diff
+         sickrage.no_min_cache_time.diff)
+
+pkgver() {
+  cd $pkgname
+  git describe --long | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+prepare() {
+  cd $srcdir/$pkgname
+  for patch in "${patches[@]}"; do
+    echo "Patching $patch"
+    patch -p1 < "../${patch}"
+  done
+
+#  sed -i 's/UnRAR2/unrar2/g' lib/unrar2/test_UnRAR2.py
+}
+#
+#check() {
+#  cd $pkgname/lib/unrar2
+#  PYTHONPATH="$(pwd)/..:$PYTHONPATH" python2 test_UnRAR2.py
+#}
+
+package() {
+  # The sickrage "SOURCE" install type does not have the .git folder (git repository files)
+  install -dm755 "$pkgdir/opt/sickrage"
+  cp -rp $pkgname/* "$pkgdir/opt/sickrage"
+ 
+  install -Dm644 sickrage.service "$pkgdir/usr/lib/systemd/system/sickrage.service"
+  install -Dm644 sickrage.tmpfile "$pkgdir/usr/lib/tmpfiles.d/sickrage.conf"
+}
+

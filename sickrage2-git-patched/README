@@ -1,0 +1,5 @@
+This is a copy of the sickrage2-git PKGBUILD with my custom patches added.
+
+These patches removes min-cache time and lowers the minimum interval on daily search.
+
+Please note that these patches allows for hammering providers and should therefore only be used on locally hosted feeds.
