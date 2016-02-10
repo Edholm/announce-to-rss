@@ -21,6 +21,7 @@ item_template = """<item>
     <title>{title}</title>
     <link>{link}</link>
     <description>{desc}</description>
+    <pubDate>{desc}</pubDate>
 </item>
 """
 
